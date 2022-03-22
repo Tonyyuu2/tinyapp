@@ -60,9 +60,22 @@ app.post("/urls", (req, res) => { // need clarification
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  delete urlDatabase[req.params.shortURL]
+  delete urlDatabase[req.params.shortURL];
   res.redirect('/urls');
 });
+
+app.get("/urls/:shortURL/edit", (req, res) => {
+  const templateVars = {shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]}
+  res.render("urls_show", templateVars); //render builds a page 
+});
+
+app.post("/urls/:shortURL/edit", (req, res) => {
+  const shortURL = req.params.shortURL;
+  const longURL = req.body.longURL;
+  urlDatabase[shortURL] = longURL; //urlDatabase[shorturl] = lo // shortURL is the key and the longURL is the value 
+  res.redirect("/urls");
+});
+// https://www.youtube.com/c/TraversyMedia/videos
 
 app.listen(PORT, () => { //telling server to listen to this port 
   console.log(`Example app listening on port ${PORT}!`);
