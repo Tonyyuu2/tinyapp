@@ -1,9 +1,11 @@
 const express = require("express"); //imported express
 const bodyParser = require("body-parser"); //imported body parser
 const morgan = require('morgan');
+const cookieParser = require("cookie-parser");
 const app = express(); //setting app to the express function 
 const PORT = 8080; // default port 8080
 
+app.use(cookieParser());
 app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({extended: true})); //using body parser for urlencoding?
 app.set("view engine", "ejs"); //setting the view engine to ejs 
@@ -31,7 +33,10 @@ app.get("/hello", (req, res) => { //on the local host/hello, send this...
 });
 
 app.get("/urls", (req, res) => { // on the urls page, response, I want to render with ejs and post 
-  const templateVars = { urls: urlDatabase};
+  const templateVars = { 
+    username: req.cookies["username"],
+    urls: urlDatabase
+  };
   res.render("urls_index", templateVars) //render using urls_index for the value of templateVars
 });
 
@@ -76,6 +81,18 @@ app.post("/urls/:shortURL/edit", (req, res) => {
   res.redirect("/urls");
 });
 // https://www.youtube.com/c/TraversyMedia/videos
+
+app.post("/login", (req, res) => {
+  const username = req.body.username;
+  res.cookie("username", username);
+  res.redirect("/urls");
+});
+
+app.post("/logout", (req, res) => {
+  const username = req.body.username;
+  res.clearCookie("username")
+  res.redirect("/urls")
+});
 
 app.listen(PORT, () => { //telling server to listen to this port 
   console.log(`Example app listening on port ${PORT}!`);
