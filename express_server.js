@@ -19,9 +19,9 @@ function generateRandomID() {
 };
 
 const userLookUp = (email, users) => {
-  for (const user in users) {
-    if(users[user].email === email) { //the email inside user object within the users object
-      return user
+  for (const userId in users) {
+    if(users[userId].email === email) { //the email inside user object within the users object
+      return users[userId] //returns the value of userID inside users object
     };
   }
   return false
@@ -78,7 +78,6 @@ app.get("/urls/new", (req, res) => { //get the response for urls/new and I want 
 app.get("/urls/:shortURL", (req, res) => { //when given a shortURL 
   const user = users[req.cookies["user_id"]]
   const templateVars = {
-    username: req.cookies["user_id"],
     shortURL: req.params.shortURL, // when you do the get req. the req is the object of the url. params is one of the keys and :shortURL is the value of that key
     longURL: urlDatabase[req.params.shortURL],
     user
@@ -123,9 +122,9 @@ app.get("/login", (req, res) => {
     user
   }
   res.render("login", templateVars)
-})
+});
 
-app.post("/register", (req, res) => {
+app.post("/register", (req, res) => { //post expects info from front end // get is backend telling front end 
   const email = req.body.email;
   const password = req.body.password;
 
@@ -158,12 +157,24 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 // https://www.youtube.com/c/TraversyMedia/videos
 
 app.post("/login", (req, res) => {
-  const id = req.body["user_id"]; //req.body["user_id"] = email login info 
-  res.cookie("user_id", id); //"user_id" === id === email 
+  // const id = req.body["user_id"]; //req.body["user_id"] = email login info 
+  const {email, password} = req.body;
+  console.log('users :', users);
+  const user = userLookUp(email, users);
+ 
+  if(!user) {
+    res.send(403)
+    return
+  } 
+  if(user.password !== password) {
+    res.send(403)
+    return //terminate function don't run anything after this point if condition is met
+  }
+  res.cookie("user_id", user.id); //"user_id" === id === email 
   res.redirect("/urls");
 });
 
-app.post("/logout", (req, res) => {
+app.get("/logout", (req, res) => {
   res.clearCookie("user_id")
   res.redirect("/urls")
 });
