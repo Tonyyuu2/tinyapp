@@ -41,11 +41,15 @@ app.get("/urls", (req, res) => { // on the urls page, response, I want to render
 });
 
 app.get("/urls/new", (req, res) => { //get the response for urls/new and I want to render what I have on urls_new
-  res.render("urls_new");
-});
+  const templateVars = { 
+    username: req.cookies["username"]
+  };
+    res.render("urls_new", templateVars);
+  });
 
 app.get("/urls/:shortURL", (req, res) => { //when given a shortURL 
   const templateVars = {
+    username: req.cookies["username"],
     shortURL: req.params.shortURL, // when you do the get req. the req is the object of the url. params is one of the keys and :shortURL is the value of that key
     longURL: urlDatabase[req.params.shortURL]
   }; // need clarification  
@@ -54,7 +58,10 @@ app.get("/urls/:shortURL", (req, res) => { //when given a shortURL
         //is the path :id the colon is a placeholder.
 app.get("/u/:shortURL", (req, res) => { // need clarification 
  const longURL = urlDatabase[req.params.shortURL]
-  res.redirect(longURL)
+ const templateVars = { 
+  username: req.cookies["username"]
+};
+  res.redirect(longURL, templateVars)
 });
 
 app.post("/urls", (req, res) => { // need clarification 
@@ -70,7 +77,10 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.get("/urls/:shortURL/edit", (req, res) => {
-  const templateVars = {shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]}
+  const templateVars = {shortURL: req.params.shortURL, 
+    longURL: urlDatabase[req.params.shortURL],
+    username: req.cookies["username"]
+};
   res.render("urls_show", templateVars); //render builds a page 
 });
 
@@ -103,3 +113,4 @@ app.listen(PORT, () => { //telling server to listen to this port
 // <%= id %> is a dynamic tag that brings in the variable 
 //res.render('____') brings and connects the ejs file with the server file
 //middleware is software that will run on every request  
+//why does code break when I dont aad username: req.cookies["username"]
