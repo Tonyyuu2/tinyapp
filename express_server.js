@@ -1,46 +1,21 @@
+const { generateRandomID, generateRandomString, getUserByEmail, urlsForUser } = require("./helper"); 
+
 const express = require("express"); //imported express
 const bodyParser = require("body-parser"); //imported body parser
 const morgan = require('morgan');
-const cookieParser = require("cookie-parser");
+const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
 
 const app = express(); //setting app to the express function 
 const PORT = 8080; // default port 8080
 
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2'] //keys = used in encryption and decryption process, additional security measures
+}));
 app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({extended: true})); //using body parser for urlencoding?
 app.set("view engine", "ejs"); //setting the view engine to ejs 
-
-function generateRandomString() { // generates random alphanumeric characters
-  return Math.random().toString(36).slice(-6);
-};
-
-function generateRandomID() {
-  return Math.random().toString(36).slice(-5)
-};
-
-const userLookUp = (email, users) => {
-  for (const userId in users) {
-    if(users[userId].email === email) { //the email inside user object within the users object
-      return users[userId] //returns the value of userID inside users object
-    };
-  }
-  return false
-};
-
-const urlsForUser = (id, database) => {
-  let userUrls = {}; 
-  if(!id) {
-    return null
-  }
-  for (const shortURL in database) {
-    if (database[shortURL].userID === id) {
-      userUrls[shortURL] = database[shortURL]
-    }
-  }
-  return userUrls;
-};
 
 const urlDatabase = {
   b6UTxQ: {
@@ -74,7 +49,7 @@ app.get("/hello", (req, res) => { //on the local host/hello, send this...
   res.send("<html><body>Hello <b>World</b></body></html>\n")
 });
 app.get("/urls", (req, res) => { // on the urls page, response, I want to render with ejs and post 
-  const user = users[req.cookies["user_id"]]
+  const user = users[req.session.user_id]
   const templateVars = { 
     user,
     urls: urlsForUser(user, urlDatabase)
@@ -82,7 +57,7 @@ app.get("/urls", (req, res) => { // on the urls page, response, I want to render
   res.render("urls_index", templateVars) //render using urls_index for the value of templateVars
 });
 app.get("/urls/new", (req, res) => { //get the response for urls/new and I want to render what I have on urls_new
-  const user = users[req.cookies["user_id"]]
+  const user = users[req.session.user_id]
   if(!user) {
     return res.redirect("/login")
   }
@@ -92,7 +67,7 @@ app.get("/urls/new", (req, res) => { //get the response for urls/new and I want 
   res.render("urls_new", templateVars);
   });
 app.get("/urls/:shortURL", (req, res) => { //when given a shortURL 
-  const user = users[req.cookies["user_id"]]
+  const user = users[req.session.user_id]
   if(!user) {
     return res.send(404)
   }
@@ -105,7 +80,7 @@ app.get("/urls/:shortURL", (req, res) => { //when given a shortURL
 }); //shortURL sets those values that we need to have and then get passed on 
 //is the path :id the colon is a placeholder. 
 app.get("/u/:shortURL", (req, res) => { // need clarification 
-  const user = users[req.cookies["user_id"]]
+  const user = users[req.session.user_id]
   if(!user) {
     return res.send(404)
   }
@@ -116,7 +91,7 @@ app.get("/u/:shortURL", (req, res) => { // need clarification
   res.redirect(longURL)
 });
 app.post("/urls", (req, res) => { // need clarification
-  const user = users[req.cookies["user_id"]]
+  const user = users[req.session.user_id]
   if(!user) {
     return res.send("Uh-oh... Are you logged in?")
   }
@@ -128,7 +103,7 @@ app.post("/urls", (req, res) => { // need clarification
   res.redirect(`/urls/${shortURL}`);
 }); // cannot test post requests // get = no body, checking information it already has // post = sending new information to the backend -> processing 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  const user = users[req.cookies["user_id"]]
+  const user = users[req.session.user_id]
   if(!user) {
     return res.send("Please log in")
   }
@@ -136,7 +111,8 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect('/urls');
 });
 app.get("/urls/:shortURL/edit", (req, res) => {
-  const user = users[req.cookies["user_id"]] //the user id value in cookies in users object -> all the info with it 
+  // const user = users[req.cookies["user_id"]] //the user id value in cookies in users object -> all the info with it 
+  const user = users[req.session.user_id]
   if(!user) {
     return res.send(404)
   }
@@ -149,14 +125,14 @@ app.get("/urls/:shortURL/edit", (req, res) => {
 });
 app.get("/register", (req, res) =>  {
   const templateVars = {user: null};
-  const user = users[req.cookies["user_id"]]
+  const user = users[req.session.user_id]
   if(user) {
     return res.redirect("/urls")
   }
   res.render("registeration_page", templateVars)
 });
 app.get("/login", (req, res) => {
-  const user = users[req.cookies["user_id"]]
+  const user = users[req.session.user_id]
   if(user) {
     return res.redirect("/urls")
   }
@@ -174,7 +150,7 @@ app.post("/register", (req, res) => { //post expects info from front end // get 
     res.send(400)
     return
   };
-  const emailExists = userLookUp(email, users);
+  const emailExists = getUserByEmail(email, users);
   if(emailExists) {
     res.send(400)
     return
@@ -185,7 +161,8 @@ app.post("/register", (req, res) => { //post expects info from front end // get 
     email: req.body.email,
     password: hashedPassword
   };
-  res.cookie("user_id", Id) //"userId" = just an identifier Id value === login value 
+  // res.cookie("user_id", Id) //"userId" = just an identifier Id value === login value // cookies are objects
+  req.session.user_id = Id; //cookies can be edited, sessions are mixed in keys so it's harder to decipher
   res.redirect("/urls");
 
 });
@@ -200,7 +177,7 @@ app.post("/login", (req, res) => {
   // const id = req.body["user_id"]; //req.body["user_id"] = email login info 
   const {email, password} = req.body;
   const hashedPassword = bcrypt.hashSync(password, 10);
-  const user = userLookUp(email, users);
+  const user = getUserByEmail(email, users);
   if(!user) {
     res.send(403) //res.status(400).send(msg)
     return
@@ -209,11 +186,12 @@ app.post("/login", (req, res) => {
     res.send(403)
     return //terminate function don't run anything after this point if condition is met
   }
-  res.cookie("user_id", user.id); //"user_id" === id === email 
+  // res.cookie("user_id", user.id); //"user_id" === id === email 
+  req.session.user_id = user.id; //session ID is now === user.id from the database
   res.redirect("/urls");
 });
-app.get("/logout", (req, res) => {
-  res.clearCookie("user_id")
+app.post("/logout", (req, res) => { //check on this 
+  req.session = null
   res.redirect("/urls")
 });
 app.listen(PORT, () => { //telling server to listen to this port 
