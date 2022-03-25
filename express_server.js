@@ -2,6 +2,8 @@ const express = require("express"); //imported express
 const bodyParser = require("body-parser"); //imported body parser
 const morgan = require('morgan');
 const cookieParser = require("cookie-parser");
+const bcrypt = require('bcryptjs');
+
 const app = express(); //setting app to the express function 
 const PORT = 8080; // default port 8080
 
@@ -166,8 +168,9 @@ app.get("/login", (req, res) => {
 app.post("/register", (req, res) => { //post expects info from front end // get is backend telling front end 
   const email = req.body.email;
   const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
 
-  if(!email || !password) {
+  if(!email || !hashedPassword) {
     res.send(400)
     return
   };
@@ -180,7 +183,7 @@ app.post("/register", (req, res) => { //post expects info from front end // get 
   users[Id] = {
     id: Id,
     email: req.body.email,
-    password: req.body.password
+    password: hashedPassword
   };
   res.cookie("user_id", Id) //"userId" = just an identifier Id value === login value 
   res.redirect("/urls");
@@ -196,12 +199,13 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 app.post("/login", (req, res) => {
   // const id = req.body["user_id"]; //req.body["user_id"] = email login info 
   const {email, password} = req.body;
+  const hashedPassword = bcrypt.hashSync(password, 10);
   const user = userLookUp(email, users);
   if(!user) {
     res.send(403) //res.status(400).send(msg)
     return
   } 
-  if(user.password !== password) {
+  if(bcrypt.compareSync(user.password, hashedPassword)) {
     res.send(403)
     return //terminate function don't run anything after this point if condition is met
   }
