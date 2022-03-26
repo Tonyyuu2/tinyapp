@@ -66,7 +66,7 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  res.redirect("/login");
 });
 
 app.get("/urls.json", (req, res) => {
@@ -161,7 +161,7 @@ app.post("/register", (req, res) => {
   const password = req.body.password;
   
   if (!email || !password) {
-    res.send(400);
+    res.status(400).send("Please enter a valid email and password");
     return;
   }
  
@@ -189,7 +189,7 @@ app.post("/login", (req, res) => {
   const {email, password} = req.body;
  
   if (!email || !password) {
-    res.send("Hey! Please enter email and password");
+    res.status(400).send("Please enter a valid email and password");
   }
  
   let user = authenticateUser(email, password, users);
