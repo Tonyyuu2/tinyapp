@@ -102,16 +102,11 @@ app.get("/urls/new", (req, res) => {
 
 app.get("/u/:shortURL", (req, res) => {
   const user = users[req.session.user_id];
-  
-  if (!user) {
-    return res.send(404);
-  }
+  const longURL = urlDatabase[req.params.shortURL].longURL;
 
   if (!urlDatabase[req.params.shortURL]) {
     return res.send(404);
   }
-
-  const longURL = urlDatabase[req.params.shortURL].longURL;
 
   res.redirect(longURL);
 });
